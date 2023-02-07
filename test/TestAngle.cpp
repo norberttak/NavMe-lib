@@ -80,6 +80,13 @@ namespace test
 			Assert::AreEqual(33, angle1.get_second());
 		}
 
+		TEST_METHOD(TestAngleString)
+		{
+			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_DECMIN");
+			Angle angle(-5, 0, 00);
+			Assert::AreEqual("-5o0'", angle.to_string(false).c_str());
+		}
+
 		TEST_METHOD(TestAngleAssignDouble)
 		{
 			Angle angle(1, 2, 3);

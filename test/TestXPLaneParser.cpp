@@ -117,6 +117,21 @@ namespace test
 			Assert::AreEqual("BP865", nav_ids[1].c_str());
 		}
 
+		TEST_METHOD(TestAirportIlsData)
+		{
+			XPlaneParser parser(nav_data_path.string());
+			parser.parse_earth_fix_dat_file();
+			parser.parse_earth_nav_dat_file();
+
+			Airport apt;
+			parser.get_airport_by_icao_id("LHBP", apt);
+
+			Assert::AreEqual("LHBP", apt.get_icao_id().c_str());
+			std::list<Runway> rwys = apt.get_runways();
+			Assert::AreEqual(4, (int)rwys.size());
+
+		}
+
 		TEST_METHOD_CLEANUP(TestXPlaneParserCleanup)
 		{
 
