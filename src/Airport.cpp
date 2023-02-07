@@ -33,6 +33,20 @@ int Runway::get_length()
     return length;
 }
 
+void Runway::set_course(int _course)
+{
+    course = _course;
+}
+
+void Runway::set_ils_freq(int _ils_freq)
+{
+    ils_freq = _ils_freq;
+}
+
+void Runway::set_length(int _length)
+{
+    length = _length;
+}
 
 
 
