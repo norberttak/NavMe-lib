@@ -148,11 +148,11 @@ std::string Angle::to_string(bool use_abs)
 
 	if (angle_format == "ANGLE_DEG_DECMIN")
 	{
-		o_str << std::setprecision(4) << (use_abs ? abs(degree) : degree) << 'o' << (double)(minute + ((double)second / 60)) << "'";
+		o_str << ((use_abs==false && sign_negative)?"-":"") << std::setprecision(4) << (use_abs ? abs(degree) : degree) << 'o' << (double)(minute + ((double)second / 60)) << "'";
 	}
 	else if (angle_format == "ANGLE_DEG_MIN_SEC")
 	{
-		o_str << std::setprecision(4) << (use_abs ? abs(degree) : degree) << 'o' << minute << "'" << second << "\"";
+		o_str << ((use_abs == false && sign_negative) ? "-" : "") << std::setprecision(4) << (use_abs ? abs(degree) : degree) << 'o' << minute << "'" << second << "\"";
 	}
 	else if (angle_format == "ANGLE_DOUBLE")
 	{
