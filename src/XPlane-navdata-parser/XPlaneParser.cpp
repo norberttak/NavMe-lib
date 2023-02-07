@@ -7,7 +7,7 @@
 #include "../NavMeLib.h"
 #include "../Logger.h"
 
-std::filesystem::path XPlaneParser::absolute_path(std::string root_folder, std::string nav_folder,std::string file_name)
+std::filesystem::path XPlaneParser::absolute_path(std::string root_folder, std::string nav_folder, std::string file_name)
 {
 	std::filesystem::path init_path = std::filesystem::path(root_folder);
 	//init_path = init_path.remove_filename();
@@ -17,7 +17,7 @@ std::filesystem::path XPlaneParser::absolute_path(std::string root_folder, std::
 	return init_path;
 }
 
-void XPlaneParser::trim_line(std::string &line)
+void XPlaneParser::trim_line(std::string& line)
 {
 	// remove the leading and trailing whitespace
 	std::regex r("^\\s+");
@@ -27,7 +27,7 @@ void XPlaneParser::trim_line(std::string &line)
 }
 
 bool XPlaneParser::parse_earth_fix_dat_file()
-{	
+{
 	std::filesystem::path file_absolute_path = absolute_path(xplane_root_folder, "Custom Data", "earth_fix.dat");
 	std::ifstream i_str;
 	i_str.open(file_absolute_path);
@@ -40,9 +40,9 @@ bool XPlaneParser::parse_earth_fix_dat_file()
 
 	std::string line;
 	int line_count = 0;
-	while (std::getline(i_str, line)) 
+	while (std::getline(i_str, line))
 	{
-		if (++line_count <= 3 || line.length()<50)
+		if (++line_count <= 3 || line.length() < 50)
 			continue;
 
 		//-21.014086111   26.872350000  ABFNV ENRT FB 2115154 ABEAM FRANCISTOWN VOR
@@ -81,48 +81,87 @@ bool XPlaneParser::parse_earth_nav_dat_file()
 
 		// 3  47.152222222   18.742222222      430    11710   130      5.000  PTB ENRT LH PUSZTASZABOLCS VOR/DME
 		//12  47.152222222   18.742222222      430    11710   130      0.000  PTB ENRT LH PUSZTASZABOLCS VOR/DME
-		//  
-		//012345678901234567890123456789012345678901234567890123456789012345678901234567890
-		//          1         2         3         4         5         6         7         8
+		// 4  47.420805556   19.297333333      499    10915    18  45852.474  BPL LHBP LH 13L ILS-cat-II  
+		//0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+		//          1         2         3         4         5         6         7         8         9
 		int type = std::stoi(line.substr(0, 2)); // type
 		double lat = std::stod(line.substr(4, 13));// lat
 		double lng = std::stod(line.substr(19, 13));// lng
 		int alt = std::stoi(line.substr(35, 5)); // alt
 		int freq = std::stoi(line.substr(44, 5)); //freq
+		double course_combined = std::stod(line.substr(56, 10)); // ILS course. 360 x magnetic course + true course
 		std::string id = line.substr(67, 4); //id
 		id = id.substr(id.find_first_not_of(' ', 0));
+		std::string ils_airport_icao = line.substr(72, 4); // only for ILS
+		std::string ils_rwy_name = line.substr(80, 3); // only for ILS
+		std::string ils_name = line.substr(84); // only for ILS
 		std::string region = line.substr(77, 2); //region
 		std::string name = line.substr(80); //name
-		
+
+		int true_course = 0;
+		int magnetic_course = 0;
+		Airport* airport_ptr = NULL;
+		bool rwy_found = false;
+
 		switch (type)
 		{
-			case 2:
-				_nav_points.emplace_back(Coordinate(Angle(lat), Angle(lng), alt), id, region, 0);
-				_nav_points.back().set_radio_type(NavPoint::NDB);
-				_nav_points.back().set_radio_frequency(freq);
-				_nav_points.back().set_name(name);
-				break;
-			case 12:
-				// DME collocated with DME. the VOR should be the previously parsed item
-				if (_nav_points.back().get_icao_id() == id)
-					_nav_points.back().set_radio_type(NavPoint::VOR_DME);
-				else
-					Logger(TLogLevel::logERROR) << "XplaneParser: VOR-DME detected but can't find the VOR entity: " << id << std::endl;
-				break;
-			case 13:
-				_nav_points.emplace_back(Coordinate(Angle(lat), Angle(lng), alt), id, region, 0);
-				_nav_points.back().set_radio_type(NavPoint::DME);
-				_nav_points.back().set_radio_frequency(freq);
-				_nav_points.back().set_name(name);
-				break;
-			case 3:
-				_nav_points.emplace_back(Coordinate(Angle(lat), Angle(lng), alt), id, region, 0);
-				_nav_points.back().set_radio_type(NavPoint::VOR);
-				_nav_points.back().set_radio_frequency(freq);
-				_nav_points.back().set_name(name);
-				break;
-			default:
-				break;
+		case 2:
+			_nav_points.emplace_back(Coordinate(Angle(lat), Angle(lng), alt), id, region, 0);
+			_nav_points.back().set_radio_type(NavPoint::NDB);
+			_nav_points.back().set_radio_frequency(freq);
+			_nav_points.back().set_name(name);
+			break;
+		case 12:
+			// DME collocated with DME. the VOR should be the previously parsed item
+			if (_nav_points.back().get_icao_id() == id)
+				_nav_points.back().set_radio_type(NavPoint::VOR_DME);
+			else
+				Logger(TLogLevel::logERROR) << "XplaneParser: VOR-DME detected but can't find the VOR entity: " << id << std::endl;
+			break;
+		case 13:
+			_nav_points.emplace_back(Coordinate(Angle(lat), Angle(lng), alt), id, region, 0);
+			_nav_points.back().set_radio_type(NavPoint::DME);
+			_nav_points.back().set_radio_frequency(freq);
+			_nav_points.back().set_name(name);
+			break;
+		case 3:
+			true_course = (int)fmod(course_combined, 360);
+			magnetic_course = (int)((course_combined - true_course) / 360);
+
+			_nav_points.emplace_back(Coordinate(Angle(lat), Angle(lng), alt), id, region, 0);
+			_nav_points.back().set_radio_type(NavPoint::VOR);
+			_nav_points.back().set_radio_frequency(freq);
+			_nav_points.back().set_name(name);
+			_nav_points.back().set_magnetic_variation(true_course - magnetic_course);
+			break;
+		case 4:
+			true_course = (int)fmod(course_combined, 360);
+			magnetic_course = (int)((course_combined - true_course) / 360);
+
+			airport_ptr = get_airport_ptr(ils_airport_icao);
+			if (!airport_ptr)
+			{
+				_airports.emplace_back(ils_airport_icao, ils_airport_icao.substr(0, 2), Coordinate(lat, lng, alt), true_course - magnetic_course);
+				airport_ptr = &_airports.back();
+			}
+
+			airport_ptr->set_magnetic_variation(true_course - magnetic_course);
+
+			for (auto& rwy : airport_ptr->get_runways())
+			{
+				if (rwy.get_name() == ils_rwy_name)
+				{
+					rwy.set_course(magnetic_course);
+					rwy.set_ils_freq(freq);
+					rwy_found = true;
+				}
+			}
+			if (!rwy_found)
+				airport_ptr->add_runway(ils_rwy_name, magnetic_course, freq, 0);
+			break;
+
+		default:
+			break;
 		}
 	}
 
@@ -130,7 +169,7 @@ bool XPlaneParser::parse_earth_nav_dat_file()
 	return true;
 }
 
-void XPlaneParser::parse_rwy_line(std::cmatch& m)
+void XPlaneParser::parse_rwy_line(std::cmatch& m, Airport* apt_ptr)
 {
 	//N47264352
 	double lat = 0;
@@ -152,10 +191,10 @@ void XPlaneParser::parse_rwy_line(std::cmatch& m)
 	else
 		lng = -1 * std::stod(lng_str.substr(1, lng_str.length()));
 
-	_airports.back().set_coordinate(Coordinate(lat, lng, std::stoi(m[2])));
+	apt_ptr->set_coordinate(Coordinate(lat, lng, std::stoi(m[2])));
 
 	//name,course,ils,length
-	_airports.back().add_runway(m[1], 0, 0, 0);
+	apt_ptr->add_runway(m[1], 0, 0, 0);
 }
 
 //APPCH:010,A,I31R,ATICO,ATICO,LH,P,C,E  A, ,   ,IF, , , , , ,      ,    ,    ,    ,    ,+,04000,     ,     ,-,230,    ,   , , , , , ,0,N,S;
@@ -208,7 +247,7 @@ void XPlaneParser::parse_proc_line(std::cmatch& m, std::string airport_icao_id)
 	{
 		_rnav_procs.emplace_back(m[4], airport_icao_id.substr(0, 2), proc_type);
 		_rnav_procs.back().add_nav_point_id(m[6]);
-		_rnav_procs.back().set_runway_name(m[5]);	
+		_rnav_procs.back().set_runway_name(m[5]);
 		_rnav_procs.back().set_airport_iaco_id(airport_icao_id);
 	}
 
@@ -217,8 +256,8 @@ void XPlaneParser::parse_proc_line(std::cmatch& m, std::string airport_icao_id)
 bool XPlaneParser::parse_airport_file(std::string airport_icao_code)
 {
 	std::string file_name = airport_icao_code + ".dat";
-	std::filesystem::path file_path = std::filesystem::path(xplane_root_folder)/ "Custom Data" / "CIFP" / file_name;
-	
+	std::filesystem::path file_path = std::filesystem::path(xplane_root_folder) / "Custom Data" / "CIFP" / file_name;
+
 	Logger(TLogLevel::logTRACE) << "Parse airport file: " << file_path << std::endl;
 
 	std::ifstream i_str;
@@ -229,10 +268,15 @@ bool XPlaneParser::parse_airport_file(std::string airport_icao_code)
 		return false;
 	}
 
-	_airports.emplace_back();
+	Airport* apt_ptr = get_airport_ptr(airport_icao_code);
+	if (apt_ptr == NULL)
+	{
+		_airports.emplace_back();
+		apt_ptr = &_airports.back();
+	}
 
-	_airports.back().set_icao_id(airport_icao_code);
-	_airports.back().set_icao_region(airport_icao_code.substr(0, 2));
+	apt_ptr->set_icao_id(airport_icao_code);
+	apt_ptr->set_icao_region(airport_icao_code.substr(0, 2));
 
 	std::string line;
 	auto re_apt_rwy_line = std::regex(APT_RWY_LINE);
@@ -244,7 +288,7 @@ bool XPlaneParser::parse_airport_file(std::string airport_icao_code)
 		std::cmatch m;
 		if (std::regex_match(line.c_str(), m, re_apt_rwy_line))
 		{
-			parse_rwy_line(m);
+			parse_rwy_line(m, apt_ptr);
 		}
 		else if (std::regex_match(line.c_str(), m, re_apt_proc_line))
 		{
@@ -312,7 +356,7 @@ std::list<NavPoint> XPlaneParser::get_nav_points_by_icao_id(std::string region, 
 	return return_list;
 }
 
-bool XPlaneParser::get_airport_by_icao_id(std::string icao_id, Airport &_airport)
+bool XPlaneParser::get_airport_by_icao_id(std::string icao_id, Airport& _airport)
 {
 	for (auto& ap : _airports)
 	{
@@ -342,27 +386,23 @@ bool XPlaneParser::get_airport_by_icao_id(std::string icao_id, Airport &_airport
 	return false;
 }
 
-bool XPlaneParser::get_procedure_by_id(std::string proc_name, std::string airport_icao, RNAVProc& proc)
+Airport* XPlaneParser::get_airport_ptr(std::string airport_icao_code)
 {
-	bool airport_file_already_parsed = false;
 	for (auto& ap : _airports)
 	{
-		if (ap.get_icao_id() == airport_icao)
+		if (ap.get_icao_id() == airport_icao_code)
 		{
-			airport_file_already_parsed = true;
+			return &ap;
 		}
 	}
+	return NULL;
+}
 
-	if (!airport_file_already_parsed) 
-	{
-		if (!parse_airport_file(airport_icao))
-		{
-			Logger(TLogLevel::logERROR) << "Can't open airport file for " << airport_icao << std::endl;
-			return false;
-		}
-	}
+bool XPlaneParser::get_procedure_by_id(std::string proc_name, std::string airport_icao, RNAVProc& proc)
+{
+	parse_airport_file(airport_icao);
 
- 	for (auto it = _rnav_procs.begin(); it != _rnav_procs.end(); it++)
+	for (auto it = _rnav_procs.begin(); it != _rnav_procs.end(); it++)
 	{
 		if (it->get_name() == proc_name && it->get_airport_icao_id() == airport_icao) {
 			proc = *it;
