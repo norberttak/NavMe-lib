@@ -85,8 +85,8 @@ bool XPlaneParser::parse_earth_nav_dat_file()
 		//0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 		//          1         2         3         4         5         6         7         8         9
 		int type = std::stoi(line.substr(0, 2)); // type
-		double lat = std::stod(line.substr(4, 13));// lat
-		double lng = std::stod(line.substr(19, 13));// lng
+		double lat = std::stod(line.substr(3, 13));// lat
+		double lng = std::stod(line.substr(18, 13));// lng
 		int alt = std::stoi(line.substr(35, 5)); // alt
 		int freq = std::stoi(line.substr(44, 5)); //freq
 		double course_combined = std::stod(line.substr(56, 10)); // ILS course. 360 x magnetic course + true course
@@ -191,6 +191,12 @@ void XPlaneParser::parse_rwy_line(std::cmatch& m, Airport* apt_ptr)
 	else
 		lng = -1 * std::stod(lng_str.substr(1, lng_str.length()));
 
+	for (auto& rwy : apt_ptr->get_runways())
+	{
+		if (rwy.get_name() == m[1])
+			return;
+	}
+
 	apt_ptr->set_coordinate(Coordinate(lat, lng, std::stoi(m[2])));
 
 	//name,course,ils,length
@@ -255,6 +261,13 @@ void XPlaneParser::parse_proc_line(std::cmatch& m, std::string airport_icao_id)
 
 bool XPlaneParser::parse_airport_file(std::string airport_icao_code)
 {
+	//if airport file already parsed, we don't need to parse it again
+	for (auto& ap_str : _airport_files_parsed)
+	{
+		if (ap_str == airport_icao_code)
+			return true;
+	}
+
 	std::string file_name = airport_icao_code + ".dat";
 	std::filesystem::path file_path = std::filesystem::path(xplane_root_folder) / "Custom Data" / "CIFP" / file_name;
 
@@ -296,6 +309,7 @@ bool XPlaneParser::parse_airport_file(std::string airport_icao_code)
 		}
 	}
 
+	_airport_files_parsed.emplace_back(airport_icao_code);
 	return true;
 }
 
@@ -303,14 +317,11 @@ std::list<RNAVProc> XPlaneParser::get_rnav_procs_by_airport_icao_id(std::string 
 {
 	std::list<RNAVProc> rnav_procs;
 
-	bool airport_parsed = false;
-	for (auto& ap : _airports)
-		if (ap.get_icao_id() == icao_id)
-			airport_parsed = true;
-
-	if (!airport_parsed)
-		if (!parse_airport_file(icao_id))
-			return rnav_procs;
+	if (!parse_airport_file(icao_id))
+	{
+		Logger(TLogLevel::logERROR) << "Can't open airport file for " << icao_id << std::endl;
+		return rnav_procs;
+	}
 
 	for (auto& proc : _rnav_procs) {
 		if (proc.get_airport_icao_id() == icao_id)
@@ -358,15 +369,6 @@ std::list<NavPoint> XPlaneParser::get_nav_points_by_icao_id(std::string region, 
 
 bool XPlaneParser::get_airport_by_icao_id(std::string icao_id, Airport& _airport)
 {
-	for (auto& ap : _airports)
-	{
-		if (ap.get_icao_id() == icao_id)
-		{
-			_airport = ap;
-			return true;
-		}
-	}
-
 	if (!parse_airport_file(icao_id))
 	{
 		Logger(TLogLevel::logERROR) << "Can't open airport file for " << icao_id << std::endl;
@@ -400,7 +402,11 @@ Airport* XPlaneParser::get_airport_ptr(std::string airport_icao_code)
 
 bool XPlaneParser::get_procedure_by_id(std::string proc_name, std::string airport_icao, RNAVProc& proc)
 {
-	parse_airport_file(airport_icao);
+	if (!parse_airport_file(airport_icao))
+	{
+		Logger(TLogLevel::logERROR) << "Can't open airport file for " << airport_icao << std::endl;
+		return false;
+	}
 
 	for (auto it = _rnav_procs.begin(); it != _rnav_procs.end(); it++)
 	{
