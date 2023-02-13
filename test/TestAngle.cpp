@@ -84,7 +84,14 @@ namespace test
 		{
 			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_DECMIN");
 			Angle angle(-5, 0, 00);
-			Assert::AreEqual("-5o0'", angle.to_string(false).c_str());
+			Assert::AreEqual("-5ø00.0'", angle.to_string(false).c_str());
+
+			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_DECMIN");
+			Angle angle1(125, 43, 21);
+			Assert::AreEqual("125ø43.3'", angle1.to_string(false).c_str());
+
+			Angle angle2(-11, 1, 30);
+			Assert::AreEqual("-11ø01.5'", angle2.to_string(false).c_str());
 		}
 
 		TEST_METHOD(TestAngleAssignDouble)
@@ -103,7 +110,7 @@ namespace test
 			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_MIN_SEC");
 			Angle angle(18, 30, 40);
 			std::string str = angle.to_string(false);
-			Assert::AreEqual("18o30'40\"", str.c_str());
+			Assert::AreEqual("18ø30'40\"", str.c_str());
 		}
 
 		TEST_METHOD(TestAngleToStringDouble)

@@ -139,8 +139,6 @@ int Angle::get_second()
 
 std::string Angle::to_string(bool use_abs)
 {
-	//std::setw(4)
-	//std::setfill('0')
 	std::ostringstream o_str;
 
 	std::string angle_format;
@@ -148,11 +146,14 @@ std::string Angle::to_string(bool use_abs)
 
 	if (angle_format == "ANGLE_DEG_DECMIN")
 	{
-		o_str << ((use_abs==false && sign_negative)?"-":"") << std::setprecision(4) << (use_abs ? abs(degree) : degree) << 'o' << (double)(minute + ((double)second / 60)) << "'";
+		o_str << ((use_abs==false && sign_negative)?"-":"") << std::setprecision(4)
+			<< (use_abs ? abs(degree) : degree) << char(248)
+			<< std::setw(2) << std::setfill('0') << minute << "."
+			<< std::setw(1) << std::setfill('0') << (int)(10*second / 60) << "'";
 	}
 	else if (angle_format == "ANGLE_DEG_MIN_SEC")
 	{
-		o_str << ((use_abs == false && sign_negative) ? "-" : "") << std::setprecision(4) << (use_abs ? abs(degree) : degree) << 'o' << minute << "'" << second << "\"";
+		o_str << ((use_abs == false && sign_negative) ? "-" : "") << std::setprecision(4) << (use_abs ? abs(degree) : degree) << char(248) << minute << "'" << second << "\"";
 	}
 	else if (angle_format == "ANGLE_DOUBLE")
 	{

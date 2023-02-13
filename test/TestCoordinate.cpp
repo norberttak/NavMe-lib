@@ -74,7 +74,7 @@ namespace test
 			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_MIN_SEC");
 
 			std::string coord_str = coord_ksea.to_string();
-			Assert::AreEqual("N47o26\'56\" E122o18\'34\"",coord_str.c_str());
+			Assert::AreEqual("N47ø26\'56\" E122ø18\'34\"",coord_str.c_str());
 		}
 
 		TEST_METHOD(TestCoordinateToStringDegDecMin)
@@ -83,7 +83,7 @@ namespace test
 			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_DECMIN");
 
 			std::string coord_str = coord_ksea.to_string();
-			Assert::AreEqual("N47o26.93\' E122o18.57\'", coord_str.c_str());
+			Assert::AreEqual("N47ø26.9\' E122ø18.5\'", coord_str.c_str());
 		}
 
 		TEST_METHOD(TestCoordinateToStringDegDouble)
