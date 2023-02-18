@@ -31,7 +31,7 @@ const std::string APT_RWY_LINE ="RWY:RW" +
 								RE_ID_S + "," + //[1] RWY name
 								".+" + "," +
 								".+" + "," +
-								"\s*"+RE_INT + "," + //[2] elevation
+								"\\s*"+RE_INT + "," + //[2] elevation
 								".+" + "," +
 								RE_ID_S + "," + //[3] ???
 								".+" + "," +

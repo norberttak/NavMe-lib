@@ -21,17 +21,17 @@ RNAVProc::RNAVProc():
 
 RNAVProc::~RNAVProc()
 {
-	nav_point_ids.clear();
+	nav_points.clear();
 }
 
-void RNAVProc::add_nav_point_id(std::string nav_pnt_id)
+void RNAVProc::add_nav_point(NavPoint nav_pnt)
 {
-	nav_point_ids.emplace_back(nav_pnt_id);
+	nav_points.emplace_back(nav_pnt);
 }
 
-std::vector<std::string> RNAVProc::get_nav_point_ids()
+std::vector<NavPoint> RNAVProc::get_nav_points()
 {
-	return nav_point_ids;
+	return nav_points;
 }
 
 std::string RNAVProc::get_name()
@@ -76,7 +76,7 @@ RNAVProc& RNAVProc::operator=(const RNAVProc& other)
 	airport_iaco_id = other.airport_iaco_id;
 	rwy = other.rwy;
 	type = other.type;
-	nav_point_ids = other.nav_point_ids;
+	nav_points = other.nav_points;
 
 	return *this;
 }

@@ -205,6 +205,7 @@ void XPlaneParser::parse_rwy_line(std::cmatch& m, Airport* apt_ptr)
 
 //APPCH:010,A,I31R,ATICO,ATICO,LH,P,C,E  A, ,   ,IF, , , , , ,      ,    ,    ,    ,    ,+,04000,     ,     ,-,230,    ,   , , , , , ,0,N,S;
 //APPCH:020, A, I31R, ATICO, BP865, LH, P, C, EE B, , , TF, , BPR, LH, P, I, , , , , , +, 03000, , , -, 230, , , , , , , , 0, N, S;
+//SID:060,5,BADO2B,RW13L,BADOV,LZ,E,A,EEC , ,   ,TF, , , , , ,      ,    ,    ,    ,    ,+,FL140,     ,     , ,   ,    ,   , , , , , , , , ;
 void XPlaneParser::parse_approach_proc_line(std::cmatch& m, std::string airport_iaco_id)
 {
 	if (m[3] != "A")
@@ -218,12 +219,11 @@ void XPlaneParser::parse_approach_proc_line(std::cmatch& m, std::string airport_
 
 		_rnav_procs.emplace_back(app_name_with_transition, m[7], proc_type);
 		_rnav_procs.back().set_airport_iaco_id(airport_iaco_id);
-		_rnav_procs.back().add_nav_point_id(m[6]);
 	}
-	else
-	{
-		_rnav_procs.back().add_nav_point_id(m[6]);
-	}
+
+	std::list<NavPoint> np_list = get_nav_points_by_icao_id(m[7],m[6]);
+	if (np_list.size()>0)
+		_rnav_procs.back().add_nav_point(np_list.back());
 }
 
 void XPlaneParser::parse_proc_line(std::cmatch& m, std::string airport_icao_id)
@@ -244,15 +244,21 @@ void XPlaneParser::parse_proc_line(std::cmatch& m, std::string airport_icao_id)
 	{
 		if (it->get_name() == m[4] && it->get_airport_icao_id() == airport_icao_id)
 		{
-			it->add_nav_point_id(m[6]);
+			std::list<NavPoint> np_list = get_nav_points_by_icao_id(m[7],m[6]);
+			if (np_list.size() > 0)
+				_rnav_procs.back().add_nav_point(np_list.back());
+
 			rnav_proc_already_exists = true;
 		}
 	}
 
 	if (!rnav_proc_already_exists)
 	{
-		_rnav_procs.emplace_back(m[4], airport_icao_id.substr(0, 2), proc_type);
-		_rnav_procs.back().add_nav_point_id(m[6]);
+		_rnav_procs.emplace_back(m[4], m[7], proc_type);
+		std::list<NavPoint> np_list = get_nav_points_by_icao_id(m[7],m[6]);
+		if (np_list.size() > 0)
+			_rnav_procs.back().add_nav_point(np_list.back());
+		
 		_rnav_procs.back().set_runway_name(m[5]);
 		_rnav_procs.back().set_airport_iaco_id(airport_icao_id);
 	}
