@@ -86,15 +86,15 @@ namespace test
 			Assert::AreEqual("LH", proc.get_region().c_str());
 			Assert::AreEqual("RW13L", proc.get_runway_name().c_str());
 			Assert::IsTrue(RNAVProc::RNAVProcType::RNAV_SID == proc.get_type());
-			std::vector<std::string> nav_ids = proc.get_nav_point_ids();
+			std::vector<NavPoint> nav_ids = proc.get_nav_points();
 			Assert::AreEqual(6, (int)nav_ids.size());
 
-			Assert::AreEqual("DE13L", nav_ids[0].c_str());
-			Assert::AreEqual("BP701", nav_ids[1].c_str());
-			Assert::AreEqual("BP702", nav_ids[2].c_str());
-			Assert::AreEqual("BP703", nav_ids[3].c_str());
-			Assert::AreEqual("BP704", nav_ids[4].c_str());
-			Assert::AreEqual("BADOV", nav_ids[5].c_str());
+			Assert::AreEqual("DE13L", nav_ids[0].get_icao_id().c_str());
+			Assert::AreEqual("BP701", nav_ids[1].get_icao_id().c_str());
+			Assert::AreEqual("BP702", nav_ids[2].get_icao_id().c_str());
+			Assert::AreEqual("BP703", nav_ids[3].get_icao_id().c_str());
+			Assert::AreEqual("BP704", nav_ids[4].get_icao_id().c_str());
+			Assert::AreEqual("BADOV", nav_ids[5].get_icao_id().c_str());
 		}
 
 		TEST_METHOD(TestProcudureApproach)
@@ -110,11 +110,11 @@ namespace test
 			Assert::AreEqual("LHBP", proc.get_airport_icao_id().c_str());
 			Assert::AreEqual("LH", proc.get_region().c_str());
 			Assert::IsTrue(RNAVProc::RNAVProcType::RNAV_APPROACH == proc.get_type());
-			std::vector<std::string> nav_ids = proc.get_nav_point_ids();
+			std::vector<NavPoint> nav_ids = proc.get_nav_points();
 			Assert::AreEqual(2, (int)nav_ids.size());
 
-			Assert::AreEqual("ATICO", nav_ids[0].c_str());
-			Assert::AreEqual("BP865", nav_ids[1].c_str());
+			Assert::AreEqual("ATICO", nav_ids[0].get_icao_id().c_str());
+			Assert::AreEqual("BP865", nav_ids[1].get_icao_id().c_str());
 		}
 
 		TEST_METHOD(TestAirportIlsData)
