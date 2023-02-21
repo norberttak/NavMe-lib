@@ -1,11 +1,9 @@
 #pragma once
-#include "NavMeLibExport.h"
-
 #include "GlobalOptions.h"
 #include "Angle.h"
 #include "RelativePos.h"
 
-class EXPORT Coordinate {
+class Coordinate {
 public:
     Angle lat; // lateral
     Angle lng; // longitudinal

@@ -140,6 +140,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <Lib>
+      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\Airport.h" />
@@ -149,7 +152,6 @@
     <ClInclude Include="src\framework.h" />
     <ClInclude Include="src\GlobalOptions.h" />
     <ClInclude Include="src\Logger.h" />
-    <ClInclude Include="src\NavMeLibExport.h" />
     <ClInclude Include="src\NavPoint.h" />
     <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\NavMeLib.h" />
@@ -161,7 +163,6 @@
     <ClCompile Include="src\Airport.cpp" />
     <ClCompile Include="src\Angle.cpp" />
     <ClCompile Include="src\Coordinate.cpp" />
-    <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\FlightRoute.cpp" />
     <ClCompile Include="src\GlobalOptions.cpp" />
     <ClCompile Include="src\Logger.cpp" />

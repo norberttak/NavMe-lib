@@ -51,17 +51,11 @@
     <ClInclude Include="src\FlightRoute.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\NavMeLibExport.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\XPlane-navdata-parser\XPlaneParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\dllmain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
