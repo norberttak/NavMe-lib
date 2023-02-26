@@ -60,7 +60,7 @@ namespace test
 			Assert::AreEqual((int)NavPoint::VOR_DME, (int)top_element.get_radio_type());
 		}
 
-		TEST_METHOD(TestParseAirportFile)
+		TEST_METHOD(TestParseAirportFile_LOWI)
 		{
 			XPlaneParser parser(nav_data_path.string());
 			parser.parse_earth_fix_dat_file();
@@ -69,6 +69,20 @@ namespace test
 			Airport airport;
 			parser.get_airport_by_icao_id("LOWI", airport);
 			Assert::AreEqual(2, (int)airport.get_runways().size());
+		}
+
+		TEST_METHOD(TestParseAirportFile_KSEA)
+		{
+			XPlaneParser parser(nav_data_path.string());
+			parser.parse_earth_fix_dat_file();
+			parser.parse_earth_nav_dat_file();
+
+			Airport airport;
+			parser.get_airport_by_icao_id("KSEA", airport);
+			Assert::AreEqual(6, (int)airport.get_runways().size());
+
+			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_MIN_SEC");
+			Assert::AreEqual("N47ø15'18\" W122ø10'58\"", airport.get_coordinate().to_string().c_str());
 		}
 
 		TEST_METHOD(TestGetRNAVProcbyName)
