@@ -81,12 +81,13 @@ bool XPlaneParser::parse_earth_nav_dat_file()
 
 		// 3  47.152222222   18.742222222      430    11710   130      5.000  PTB ENRT LH PUSZTASZABOLCS VOR/DME
 		//12  47.152222222   18.742222222      430    11710   130      0.000  PTB ENRT LH PUSZTASZABOLCS VOR/DME
-		// 4  47.420805556   19.297333333      499    10915    18  45852.474  BPL LHBP LH 13L ILS-cat-II  
+		// 4  47.420805556   19.297333333      499    10915    18  45852.474  BPL LHBP LH 13L ILS-cat-II 
+		// 4  47.466605556 -122.317833333      359    11075    18 123840.337 IBEJ KSEA K1 34L ILS-cat-II
 		//0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 		//          1         2         3         4         5         6         7         8         9
 		int type = std::stoi(line.substr(0, 2)); // type
 		double lat = std::stod(line.substr(3, 13));// lat
-		double lng = std::stod(line.substr(18, 13));// lng
+		double lng = std::stod(line.substr(17, 13));// lng
 		int alt = std::stoi(line.substr(35, 5)); // alt
 		int freq = std::stoi(line.substr(44, 5)); //freq
 		double course_combined = std::stod(line.substr(56, 10)); // ILS course. 360 x magnetic course + true course
