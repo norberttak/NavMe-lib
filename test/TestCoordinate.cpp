@@ -35,14 +35,14 @@ namespace test
 			Assert::AreEqual(7701, int(relative_pos.dist_ortho));
 			
 			// departure heading shall be 34o27'6"
-			Assert::AreEqual(34, relative_pos.heading_ortho_departure.get_degree());
-			Assert::AreEqual(27, relative_pos.heading_ortho_departure.get_minute());
-			Assert::AreEqual(6, relative_pos.heading_ortho_departure.get_second());
+			Assert::AreEqual(34, relative_pos.heading_ortho_departure.get_degree(), L"departure deg");
+			Assert::AreEqual(27, relative_pos.heading_ortho_departure.get_minute(), L"departure min");
+			Assert::AreEqual(6, relative_pos.heading_ortho_departure.get_second(), L"departure sec");
 
 			// arrival heading shall be 142o6'12"
-			Assert::AreEqual(142, relative_pos.heading_ortho_arrival.get_degree());
-			Assert::AreEqual(6, relative_pos.heading_ortho_arrival.get_minute());
-			Assert::AreEqual(12, relative_pos.heading_ortho_arrival.get_second());
+			Assert::AreEqual(142, relative_pos.heading_ortho_arrival.get_degree(), L"arrival deg");
+			Assert::AreEqual(6, relative_pos.heading_ortho_arrival.get_minute(), L"arrival min");
+			Assert::AreEqual(12, relative_pos.heading_ortho_arrival.get_second(), L"arrival sec");
 		}
 
 		TEST_METHOD(TestComputeRouteLoxodrom_KSEA_EGLL)
