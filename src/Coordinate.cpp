@@ -10,7 +10,9 @@
 
 Coordinate::Coordinate()
 {
-
+	lat = Angle(0);
+	lng = Angle(0);
+	elevation = 0;
 }
 
 Coordinate::Coordinate(double _lat, double _lng, double _elevation)
@@ -52,34 +54,78 @@ Coordinate& Coordinate::operator=(const Coordinate& other)
 	return *this;
 }
 
+double Coordinate::calculate_heading_ortho_departure(double lat1, double lng1, double lat2, double lng2)
+{
+	// calculate departure heading for orthodrom route. see details: http://www.edwilliams.org/avform147.htm#Crs
+	double direct_angle = (180 / PI) * std::fmod(atan2(sin(lng2 - lng1) * cos(lat2),
+		cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(lng1 - lng2)), 2 * PI);
+
+	if (direct_angle < 0)
+		direct_angle = direct_angle + 360;
+
+	return direct_angle;
+}
+
+double Coordinate::calculate_heading_ortho_arrival(double dep_heading, double lat1, double lng1, double lat2, double lng2)
+{
+	// calculate arrival heading for orthodrom route
+	// use the Clairaut's formula: http://www.edwilliams.org/avform147.htm#Crs
+	double direct_angle = 180 - (180 / PI) * asin(sin(PI*dep_heading/180) * cos(lat1) / cos(lat2));
+
+	if (direct_angle < 0)
+		direct_angle = direct_angle + 360;
+	
+	return direct_angle;
+}
+
+double Coordinate::calculate_heading_loxo(double lat1, double lng1, double lat2, double lng2)
+{
+	//see details at http://www.edwilliams.org/avform147.htm#Rhumb
+	double dlon_W = std::fmod(lng1 - lng2, 2 * PI);
+	double dlon_E = std::fmod(lng2 - lng1, 2 * PI);
+	double dphi = log(tan(lat2 / 2 + PI / 4) / tan(lat1 / 2 + PI / 4));
+	double q = 0;
+	if (abs(lat2 - lat1) < std::sqrt(std::numeric_limits<double>::epsilon())) {
+		q = cos(lat1);
+	}
+	else {
+		q = (lat2 - lat1) / dphi;
+	}
+
+	double direct_angle = 0;
+	double direct_distance = 0;
+	if (dlon_W < dlon_E) {// Westerly rhumb line is the shortest
+		direct_angle = std::fmod(atan2(-1 * dlon_W, dphi), 2 * PI);
+		direct_distance = std::sqrt(std::pow(q,2) * std::pow(dlon_W,2) + std::pow((lat2 - lat1),2));
+	}
+	else {
+		direct_angle = std::fmod(atan2(dlon_E, dphi), 2 * PI);
+		direct_distance = std::sqrt(std::pow(q, 2) * std::pow(dlon_E, 2) + std::pow((lat2 - lat1), 2));
+	}
+
+	direct_angle = (direct_angle * 180) / PI;
+	
+	if (direct_angle < 0)
+		direct_angle = direct_angle + 360;
+
+	return direct_angle;
+}
+
 void Coordinate::get_relative_pos_to(Coordinate& destination, RelativePos& rel_pos)
 {
-	double Lat1 = lat.convert_to_radian();
-	double Lat2 = destination.lat.convert_to_radian();
+	double lat1 = lat.convert_to_radian();
+	double lat2 = destination.lat.convert_to_radian();
 	double lng1 = lng.convert_to_radian();
 	double lng2 = destination.lng.convert_to_radian();
 
-	double earth_radius_km = 6371; //average radius of the Earth in km
-	double PI = 3.14159265;
+	// calculate orthodrom (great circle) distance in km units
+	rel_pos.dist_ortho = earth_radius_km * (acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng2 - lng1)));
+	// calculate orthodrom headings
+	rel_pos.heading_ortho_departure = calculate_heading_ortho_departure(lat1, lng1, lat2, lng2);
+	rel_pos.heading_ortho_arrival = calculate_heading_ortho_arrival(rel_pos.heading_ortho_departure.convert_to_double(), lat1, lng1, lat2, lng2);
 
-	// calculate orthodrom distance in km units
-	rel_pos.dist_ortho = earth_radius_km * (acos(sin(Lat1) * sin(Lat2) + cos(Lat1) * cos(Lat2) * cos(lng2 - lng1)));
-
-	// calculate departure and arrival headings for orthodrom route 
-	rel_pos.heading_ortho_departure = (180 / PI) * atan((sin(lng1 - lng2)) / (cos(Lat1) * tan(Lat2) - sin(Lat1) * cos(lng2 - lng1)));
-	rel_pos.heading_ortho_arrival = 180 + (180 / PI) * atan((sin(lng1 - lng2)) / (-1*cos(Lat2) * tan(Lat1) + sin(Lat2) * cos(lng2 - lng1)));
-
-	// calculate loxodrom heading	
-	double d_lng = 0;
-	if (abs(lng1 - lng2) <= PI)
-		d_lng = lng1 - lng2;
-	else if (lng1 - lng2 < -1 * PI)
-		d_lng = 2 * PI + lng1 - lng2;
-	else if (lng1 - lng2 > PI)
-		d_lng = lng1 - lng2 - 2 * PI;
-
-	rel_pos.heading_loxo = (180 / PI) * atan(d_lng / (log(tan(PI/4+Lat2/2)) - log(tan(PI / 4 + Lat1 / 2))));
-
+	// calculate loxodrom (rhumb line) distance in km units
+	rel_pos.heading_loxo = calculate_heading_loxo(lat1,lng1,lat2,lng2);
 	// calculate loxodorm distance
-	rel_pos.dist_loxo = earth_radius_km * abs(Lat2 - Lat1) * abs(1 / cos(rel_pos.heading_loxo.convert_to_radian()));
+	rel_pos.dist_loxo = earth_radius_km * abs(lat2 - lat1) * abs(1 / cos(rel_pos.heading_loxo.convert_to_radian()));
 }
