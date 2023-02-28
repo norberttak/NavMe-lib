@@ -18,7 +18,7 @@ namespace test
 		TEST_METHOD_INITIALIZE(TestXPlaneParserInit)
 		{
 			nav_data_path = std::filesystem::current_path();
-			nav_data_path /= "../..";
+			nav_data_path /= "../../test/test-data";
 		}
 		TEST_METHOD(TestGetNavPointByName)
 		{
