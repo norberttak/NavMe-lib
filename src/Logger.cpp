@@ -7,6 +7,6 @@
 #include "Logger.h"
 
 FILE* Logger::f_log = NULL;
-TLogLevel Logger::current_log_level = TLogLevel::logTRACE;
+TLogLevel Logger::current_log_level = TLogLevel::logERROR;
 std::list<std::string> Logger::saved_errors_and_warnings;
 std::mutex Logger::guard;
