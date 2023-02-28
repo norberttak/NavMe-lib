@@ -171,7 +171,6 @@
   <ItemGroup>
     <ClInclude Include="..\src\Logger.h" />
     <ClInclude Include="..\src\NavMeLib.h" />
-    <ClInclude Include="pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
