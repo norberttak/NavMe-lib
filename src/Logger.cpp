@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include "pch.h"
 #include "Logger.h"
 
 FILE* Logger::f_log = NULL;

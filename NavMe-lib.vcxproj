@@ -153,7 +153,6 @@
     <ClInclude Include="src\GlobalOptions.h" />
     <ClInclude Include="src\Logger.h" />
     <ClInclude Include="src\NavPoint.h" />
-    <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\NavMeLib.h" />
     <ClInclude Include="src\RelativePos.h" />
     <ClInclude Include="src\RNAVProc.h" />
@@ -168,12 +167,6 @@
     <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\NavMeLib.cpp" />
     <ClCompile Include="src\NavPoint.cpp" />
-    <ClCompile Include="src\pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="src\RelativePos.cpp" />
     <ClCompile Include="src\RNAVProc.cpp" />
     <ClCompile Include="src\XPlane-navdata-parser\XPlaneParser.cpp" />

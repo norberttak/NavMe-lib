@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include "pch.h"
 #include "Coordinate.h"
 #include "Logger.h"
 #include "GlobalOptions.h"
