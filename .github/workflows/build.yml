@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-msbuild:
+    name: Build (Visual Studio)
+
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Install dependencies
+        run: nuget restore .
+
+      - name: Build
+        run: msbuild /m /p:Configuration=Release .
+
+      - name: Upload built library
+        uses: actions/upload-artifact@v3
+        with:
+          name: built-library-windows
+          path: x64/Release/NavMe-lib.lib
