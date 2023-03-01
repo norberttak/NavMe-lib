@@ -31,7 +31,7 @@ jobs:
       - name: Download built library (Windows)
         uses: actions/download-artifact@v3
         with:
-          name: built-library-windows 
+          name: built-library-windows
           path: built-library-windows
 
       - name: Create include directory
