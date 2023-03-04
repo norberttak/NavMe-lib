@@ -23,7 +23,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TAG: v${{ inputs.release-version }}
-      WINDOWS_RELEASE_APPLICATION_ZIP: navme-cli_windows_v${{ inputs.release-version }}.zip
+      WINDOWS_RELEASE_APPLICATION_ZIP: navme-lib_windows_v${{ inputs.release-version }}.zip
 
     steps:
       - uses: actions/checkout@v3
