@@ -64,10 +64,11 @@ namespace test
 			XPlaneParser parser(nav_data_path.string());
 			parser.parse_earth_fix_dat_file();
 			parser.parse_earth_nav_dat_file();
-			
+			parser.parse_apt_dat_file();
+
 			Airport airport;
 			parser.get_airport_by_icao_id("LOWI", airport);
-			Assert::AreEqual(2, (int)airport.get_runways().size());
+			Assert::AreEqual(4, (int)airport.get_runways().size());
 		}
 
 		TEST_METHOD(TestParseAirportFile_KSEA)
@@ -75,13 +76,14 @@ namespace test
 			XPlaneParser parser(nav_data_path.string());
 			parser.parse_earth_fix_dat_file();
 			parser.parse_earth_nav_dat_file();
+			parser.parse_apt_dat_file();
 
 			Airport airport;
 			parser.get_airport_by_icao_id("KSEA", airport);
 			Assert::AreEqual(6, (int)airport.get_runways().size());
 
 			GlobalOptions::get_instance()->set_option(OPTION_KEY_ANGLE_FORMAT, "ANGLE_DEG_MIN_SEC");
-			Assert::AreEqual("N47ø15'18\" W122ø10'58\"", airport.get_coordinate().to_string().c_str());
+			Assert::AreEqual("N47ø26'59\" W122ø18'42\"", airport.get_coordinate().to_string().c_str());
 		}
 
 		TEST_METHOD(TestGetRNAVProcbyName)
@@ -142,7 +144,26 @@ namespace test
 			Assert::AreEqual("LHBP", apt.get_icao_id().c_str());
 			std::list<Runway> rwys = apt.get_runways();
 			Assert::AreEqual(4, (int)rwys.size());
+		}
 
+		TEST_METHOD(TestParseAptDatFile)
+		{
+			XPlaneParser parser(nav_data_path.string());
+
+			parser.parse_apt_dat_file();
+			Airport apt;
+			parser.get_airport_by_icao_id("LHBP", apt);
+			Assert::AreEqual("LHBP", apt.get_icao_id().c_str());
+			Assert::AreEqual("BUD", apt.get_iata_id().c_str());
+			Assert::AreEqual("LH", apt.get_icao_region().c_str());
+			Assert::AreEqual("Budapest Ferenc Liszt Intl", apt.get_name().c_str());
+			Assert::AreEqual("Budapest", apt.get_city().c_str());
+			Assert::AreEqual("HUN Hungary", apt.get_country().c_str());
+			Assert::AreEqual("Pest", apt.get_state().c_str());
+			Assert::AreEqual(10000, apt.get_transition_alt());
+
+			std::list<Runway> rws_list = apt.get_runways();
+			Assert::AreEqual(4, (int)rws_list.size()); //31L, 13R, 31R, 13L
 		}
 
 		TEST_METHOD_CLEANUP(TestXPlaneParserCleanup)
