@@ -26,6 +26,206 @@ void XPlaneParser::trim_line(std::string& line)
 	line = std::regex_replace(line, r, "");
 }
 
+/* Runway names shall be in a format "[0-9]{2}[LRC]*" */
+std::string XPlaneParser::normalize_rwy_name(std::string name)
+{
+	//remove trailing and leading whitespaces
+	name = name.erase(name.find_last_not_of(" \t\n\r\f\v") + 1);
+	name = name.erase(0, name.find_first_not_of(" \t\n\r\f\v"));
+
+	if (name.length() < 2)
+		name += "0" + name;
+
+	if (!(name[0] >= '0' && name[0] <= '9') || !(name[1] >= '0' && name[1] <= '9'))
+	{
+		name = "0" + name;
+	}
+
+	return name;
+}
+
+bool XPlaneParser::parse_apt_dat_file()
+{
+	std::filesystem::path file_absolute_path = absolute_path(xplane_root_folder, "Global Scenery/Global Airports/Earth nav data", "apt.dat");
+	std::ifstream i_str;
+	i_str.open(file_absolute_path);
+	if (!i_str.is_open())
+	{
+		Logger(TLogLevel::logERROR) << "parse_apt_dat_file: can't open file for read: apt.dat.dat" << std::endl;
+		Logger(TLogLevel::logERROR) << "full path: " << file_absolute_path.string() << std::endl;
+		return false;
+	}
+
+	std::string line;
+	int line_count = 0;
+
+	double datum_lat = 0;
+	double datum_lon = 0;
+	int elevation = 0;
+	Airport* apt_ptr = NULL;
+
+	while (std::getline(i_str, line))
+	{
+		//1    495 0 0 LHBP Budapest Ferenc Liszt Intl
+		//012345678901234567890
+		//          1         2
+		if (line.substr(0, 4) == "1   ")
+		{
+			//save the previouss parsed airport before start a new session
+			std::string icao = line.substr(13, 4);
+			elevation = stoi(line.substr(4, 4));
+			std::string name = line.substr(18);
+
+			apt_ptr = get_airport_ptr(icao);
+			if (apt_ptr == NULL)
+			{
+				_airports.emplace_back(icao, "", Coordinate(0, 0, elevation), 0);
+				apt_ptr = &_airports.back();
+			}
+			apt_ptr->set_name(name);
+
+			datum_lat = 0;
+			datum_lon = 0;
+			continue;
+		}
+
+		//100 29.87 1 0 0.15 0 2 1 13L 47.53801700 -122.30746100 73.15 0.00 2  0  0  1  31R 47.52919200 -122.30000000 110.95 0.00 2  0  0  1
+		//0   1     2 3 4    5 6 7 8   9           10            11    12   13 14 15 16 17  18          19            20     21   22 23 24 25
+		if (line.substr(0, 4) == "100 ")
+		{
+			std::regex re("\\s+");
+			std::sregex_token_iterator it{ line.begin(), line.end(), re, -1 };
+			std::vector<std::string> tokenized{ it, {} };
+
+			int width = (int)stod(tokenized[1]);
+			double lat1 = stod(tokenized[9]);
+			double lon1 = stod(tokenized[10]);
+			double lat2 = stod(tokenized[18]);
+			double lon2 = stod(tokenized[19]);
+			Coordinate coord1(lat1, lon1, 0);
+			Coordinate coord2(lat2, lon2, 0);
+
+			RelativePos rel_pos;
+			coord1.get_relative_pos_to(coord2, rel_pos);
+			int lenght = (int)(1000*rel_pos.dist_loxo); // rwy length in meters
+
+			// check whether the runway is alredy exists (probably from earth_nav.dat file)
+			std::string rwy_name = normalize_rwy_name(tokenized[8]);
+
+			Runway* rwy = apt_ptr->get_runway_by_name(rwy_name);
+			if (rwy != NULL)
+			{
+				rwy->set_width(width);
+				rwy->set_length(lenght);
+			}
+			else
+			{
+				apt_ptr->add_runway(rwy_name, 0, 0, lenght, width);				
+			}
+
+			// do the same for the other end of the runway
+			rwy_name = normalize_rwy_name(tokenized[17]);
+			rwy = apt_ptr->get_runway_by_name(rwy_name);
+			if (rwy != NULL)
+			{
+				rwy->set_width(width);
+				rwy->set_length(lenght);
+			}
+			else
+			{
+				apt_ptr->add_runway(rwy_name, 0, 0, lenght, width);
+			}
+
+			continue;
+		}
+
+		//1302 datum_lat 47.439444444
+		//0123456789012345
+		if (line.substr(0, 14) == "1302 datum_lat")
+		{
+			datum_lat = stod(line.substr(15));
+			if (abs(datum_lon) > 0 && abs(datum_lon) > 0)
+			{
+				double elevation = _airports.back().get_coordinate().elevation;
+				apt_ptr->set_coordinate(Coordinate(datum_lat, datum_lon, elevation));
+			}
+			continue;
+		}
+
+		if (line.substr(0, 14) == "1302 datum_lon")
+		{
+			datum_lon = stod(line.substr(15));
+			if (abs(datum_lon) > 0 && abs(datum_lon) > 0)
+			{
+				double elevation = _airports.back().get_coordinate().elevation;
+				apt_ptr->set_coordinate(Coordinate(datum_lat, datum_lon, elevation));
+			}
+			continue;
+		}
+
+		//1302 region_code LH
+		//01234567890123456789
+		if (line.substr(0, 16) == "1302 region_code")
+		{
+			apt_ptr->set_icao_region(line.substr(17));
+			continue;
+		}
+
+		//1302 city Budapest
+		//01234567890123456789
+		if (line.substr(0, 9) == "1302 city")
+		{
+			apt_ptr->set_city(line.substr(10));
+			continue;
+		}
+
+		//1302 country HUN Hungary
+		//01234567890123456789
+		if (line.substr(0, 12) == "1302 country")
+		{
+			apt_ptr->set_country(line.substr(13));
+			continue;
+		}
+
+		//1302 iata_code BUD
+		//01234567890123456789
+		if (line.substr(0, 14) == "1302 iata_code")
+		{
+			apt_ptr->set_iata_id(line.substr(15));
+			continue;
+		}
+
+		//1302 state Pest
+		//01234567890123456789
+		if (line.substr(0, 10) == "1302 state")
+		{
+			apt_ptr->set_state(line.substr(11));
+			continue;
+		}
+
+		//1302 transition_alt 10000
+		//012345678901234567890
+		if (line.substr(0, 19) == "1302 transition_alt")
+		{
+			int transition_alt = 0;
+			try 
+			{
+				transition_alt = stoi(line.substr(20));
+			}
+			catch (const std::exception& e)
+			{
+				transition_alt = 0;
+			}
+
+			apt_ptr->set_transition_alt(transition_alt);
+			continue;
+		}
+
+	}
+
+	return true;
+}
+
 bool XPlaneParser::parse_earth_fix_dat_file()
 {
 	std::filesystem::path file_absolute_path = absolute_path(xplane_root_folder, "Custom Data", "earth_fix.dat");
@@ -94,7 +294,7 @@ bool XPlaneParser::parse_earth_nav_dat_file()
 		std::string id = line.substr(67, 4); //id
 		id = id.substr(id.find_first_not_of(' ', 0));
 		std::string ils_airport_icao = line.substr(72, 4); // only for ILS
-		std::string ils_rwy_name = line.substr(80, 3); // only for ILS
+		std::string ils_rwy_name = normalize_rwy_name(line.substr(80, 3)); // only for ILS
 		std::string ils_name = line.substr(84); // only for ILS
 		std::string region = line.substr(77, 2); //region
 		std::string name = line.substr(80); //name
@@ -158,7 +358,7 @@ bool XPlaneParser::parse_earth_nav_dat_file()
 				}
 			}
 			if (!rwy_found)
-				airport_ptr->add_runway(ils_rwy_name, magnetic_course, freq, 0);
+				airport_ptr->add_runway(ils_rwy_name, magnetic_course, freq, 0, 0);
 			break;
 
 		default:
@@ -168,40 +368,6 @@ bool XPlaneParser::parse_earth_nav_dat_file()
 
 	i_str.close();
 	return true;
-}
-
-void XPlaneParser::parse_rwy_line(std::cmatch& m, Airport* apt_ptr)
-{
-	//N47264352
-	double lat = 0;
-	std::string lat_str = m[4];
-	trim_line(lat_str);
-	lat_str.insert(3, 1, '.');
-	if (lat_str[0] == 'N')
-		lat = std::stod(lat_str.substr(1, lat_str.length()));
-	else
-		lat = -1 * std::stod(lat_str.substr(1, lat_str.length()));
-
-	//E019152718
-	double lng = 0;
-	std::string lng_str = m[5];
-	trim_line(lng_str);
-	lng_str.insert(4, 1, '.');
-	if (lng_str[0] == 'E')
-		lng = std::stod(lng_str.substr(1, lng_str.length()));
-	else
-		lng = -1 * std::stod(lng_str.substr(1, lng_str.length()));
-
-	for (auto& rwy : apt_ptr->get_runways())
-	{
-		if (rwy.get_name() == m[1])
-			return;
-	}
-
-	apt_ptr->set_coordinate(Coordinate(lat, lng, std::stoi(m[2])));
-
-	//name,course,ils,length
-	apt_ptr->add_runway(m[1], 0, 0, 0);
 }
 
 //APPCH:010,A,I31R,ATICO,ATICO,LH,P,C,E  A, ,   ,IF, , , , , ,      ,    ,    ,    ,    ,+,04000,     ,     ,-,230,    ,   , , , , , ,0,N,S;
@@ -305,15 +471,9 @@ bool XPlaneParser::parse_airport_file(std::string airport_icao_code)
 	{
 		trim_line(line);
 
-		std::cmatch m;
-		if (std::regex_match(line.c_str(), m, re_apt_rwy_line))
-		{
-			parse_rwy_line(m, apt_ptr);
-		}
-		else if (std::regex_match(line.c_str(), m, re_apt_proc_line))
-		{
+		std::cmatch m;		
+		if (std::regex_match(line.c_str(), m, re_apt_proc_line))
 			parse_proc_line(m, airport_icao_code);
-		}
 	}
 
 	_airport_files_parsed.emplace_back(airport_icao_code);
@@ -379,7 +539,7 @@ bool XPlaneParser::get_airport_by_icao_id(std::string icao_id, Airport& _airport
 	if (!parse_airport_file(icao_id))
 	{
 		Logger(TLogLevel::logERROR) << "Can't open airport file for " << icao_id << std::endl;
-		return false;
+		//return false;
 	}
 
 	for (auto& ap : _airports)
